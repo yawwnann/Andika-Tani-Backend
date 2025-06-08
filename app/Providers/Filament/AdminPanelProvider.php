@@ -38,7 +38,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->brandName('Admin Pupuk') // Nama aplikasi Anda
+            ->brandName('Andika Tani Admin') // Nama aplikasi Anda
             // ->brandLogo(asset('images/logo.png')) // Opsional logo
             // ->favicon(asset('images/favicon.png')) // Opsional favicon
 

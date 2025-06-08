@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Pesanan[] $pesanan
  * @property-read int|null $pesanan_count
  * @mixin \Illuminate\Database\Eloquent\Builder
- * @mixin IdeHelperPupuk
  */
 class Pupuk extends Model
 {

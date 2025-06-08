@@ -1,4 +1,5 @@
 <?php
+// File: app/Filament/Resources/PesananResource/Pages/EditPesanan.php
 
 namespace App\Filament\Resources\PesananResource\Pages;
 
@@ -31,13 +32,13 @@ class EditPesanan extends EditRecord
 
         $itemsDataFormatted = [];
         if ($pesananRecord->relationLoaded('items') && $pesananRecord->items->isNotEmpty()) {
-            foreach ($pesananRecord->items as $ikanDalamPesanan) {
-                $pivotData = $ikanDalamPesanan->pivot;
+            foreach ($pesananRecord->items as $pupukDalamPesanan) { // <--- Ganti $ikanDalamPesanan jadi $pupukDalamPesanan
+                $pivotData = $pupukDalamPesanan->pivot;
                 if ($pivotData) {
                     $itemsDataFormatted[] = [
-                        'ikan_id' => $ikanDalamPesanan->id,
+                        'pupuk_id' => $pupukDalamPesanan->id, // <--- Ganti 'ikan_id' jadi 'pupuk_id'
                         'jumlah' => $pivotData->jumlah,
-                        'harga_saat_pesan' => $pivotData->harga_saat_pesan,
+                        'harga_saat_pesanan' => $pivotData->harga_saat_pesanan, // <--- Ganti 'harga_saat_pesan' jadi 'harga_saat_pesanan'
                     ];
                 }
             }
@@ -47,7 +48,7 @@ class EditPesanan extends EditRecord
         $total = 0;
         foreach ($itemsDataFormatted as $item) {
             $jumlah = $item['jumlah'] ?? 0;
-            $harga = $item['harga_saat_pesan'] ?? 0;
+            $harga = $item['harga_saat_pesanan'] ?? 0; // <--- Ganti 'harga_saat_pesan' jadi 'harga_saat_pesanan'
             if (is_numeric($jumlah) && is_numeric($harga)) {
                 $total += $jumlah * $harga;
             }
@@ -68,15 +69,16 @@ class EditPesanan extends EditRecord
             $pivotDataForSync = [];
             if (is_array($itemsDataFromForm)) {
                 foreach ($itemsDataFromForm as $item) {
-                    $ikanId = $item['ikan_id'] ?? null;
+                    // GUNAKAN 'pupuk_id', BUKAN 'ikan_id'
+                    $pupukId = $item['pupuk_id'] ?? null; // <--- Ganti 'ikan_id' jadi 'pupuk_id'
                     $jumlah = $item['jumlah'] ?? 0;
-                    $harga = $item['harga_saat_pesan'] ?? 0;
+                    $harga = $item['harga_saat_pesanan'] ?? 0; // <--- Ganti 'harga_saat_pesan' jadi 'harga_saat_pesanan'
 
-                    if ($ikanId && is_numeric($jumlah) && $jumlah > 0 && is_numeric($harga)) {
+                    if ($pupukId && is_numeric($jumlah) && $jumlah > 0 && is_numeric($harga)) {
                         $calculatedTotal += $jumlah * $harga;
-                        $pivotDataForSync[$ikanId] = [
+                        $pivotDataForSync[$pupukId] = [ // <--- GUNAKAN $pupukId di sini
                             'jumlah' => $jumlah,
-                            'harga_saat_pesan' => $harga,
+                            'harga_saat_pesanan' => $harga, // <--- Ganti 'harga_saat_pesan' jadi 'harga_saat_pesanan'
                         ];
                     }
                 }

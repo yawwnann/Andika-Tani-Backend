@@ -2,9 +2,7 @@
 
 namespace App\Filament\Resources;
 
-// DIUBAH: Gunakan Pages dari PupukResource
 use App\Filament\Resources\PupukResource\Pages;
-// DIUBAH: Gunakan Model Pupuk
 use App\Models\Pupuk;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,13 +13,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
-// DIUBAH: Nama Class
 class PupukResource extends Resource
 {
-    // DIUBAH: Model yang digunakan
     protected static ?string $model = Pupuk::class;
 
-    // DIUBAH: Ikon, label, dan grup navigasi
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
     protected static ?string $modelLabel = 'Pupuk';
     protected static ?string $pluralModelLabel = 'Daftar Pupuk';
@@ -31,57 +26,68 @@ class PupukResource extends Resource
     {
         return $form
             ->schema([
-                // DIUBAH: Relasi ke KategoriPupuk
+                // Kolom kategori_pupuk_id: diizinkan nullable di form
+                // PASTIKAN KOLOM INI JUGA NULLABLE DI DATABASE MIGRASI ANDA!
                 Forms\Components\Select::make('kategori_pupuk_id')
                     ->relationship('kategoriPupuk', 'nama_kategori')
-                    ->required()
+                    ->nullable() // Memungkinkan kolom ini kosong di form
                     ->searchable()
                     ->preload()
                     ->label('Kategori Pupuk'),
 
-                // DIUBAH: Nama field
+                // Kolom nama_pupuk: wajib diisi
                 Forms\Components\TextInput::make('nama_pupuk')
-                    ->required()
+                    ->required() // Wajib diisi
                     ->maxLength(150)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state))),
+                    ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state)))
+                    ->label('Nama Pupuk'), // Tambahkan label eksplisit
 
+                // Kolom slug: wajib diisi dan unik
                 Forms\Components\TextInput::make('slug')
-                    ->required()
-                    // DIUBAH: Cek unique ke model Pupuk
-                    ->unique(Pupuk::class, 'slug', ignoreRecord: true)
-                    ->maxLength(170),
+                    ->required() // Wajib diisi
+                    ->unique(Pupuk::class, 'slug', ignoreRecord: true) // Pastikan slug unik
+                    ->maxLength(170)
+                    ->label('Slug'), // Tambahkan label eksplisit
 
+                // Kolom deskripsi: opsional (nullable)
                 Forms\Components\RichEditor::make('deskripsi')
-                    ->nullable()
-                    ->columnSpanFull(),
+                    ->nullable() // Memungkinkan kosong
+                    ->columnSpanFull()
+                    ->label('Deskripsi'), // Tambahkan label eksplisit
 
+                // Kolom harga: wajib diisi, numerik, dengan prefix Rp
                 Forms\Components\TextInput::make('harga')
-                    ->required()
+                    ->required() // Wajib diisi
                     ->numeric()
-                    ->prefix('Rp'),
+                    ->prefix('Rp')
+                    ->label('Harga'), // Tambahkan label eksplisit
 
+                // Kolom stok: wajib diisi, numerik, min 0, default 0
                 Forms\Components\TextInput::make('stok')
-                    ->required()
+                    ->required() // Wajib diisi
                     ->numeric()
                     ->minValue(0)
-                    ->default(0),
+                    ->default(0)
+                    ->label('Stok'), // Tambahkan label eksplisit
 
+                // Kolom status_ketersediaan: wajib diisi dengan pilihan tertentu
                 Forms\Components\Select::make('status_ketersediaan')
                     ->options([
                         'Tersedia' => 'Tersedia',
                         'Habis' => 'Habis',
                     ])
-                    ->required()
-                    ->default('Tersedia'),
+                    ->required() // Wajib diisi
+                    ->default('Tersedia')
+                    ->label('Status Ketersediaan'), // Tambahkan label eksplisit
 
+                // Kolom gambar_utama: opsional, gambar, diupload ke Cloudinary
                 Forms\Components\FileUpload::make('gambar_utama')
                     ->label('Gambar Utama')
                     ->image()
                     ->disk('cloudinary')
-                    // DIUBAH: Direktori upload di Cloudinary
                     ->directory('pupuk-images')
-                    ->nullable()
+                    ->nullable() // Memungkinkan kosong
                     ->columnSpanFull(),
             ]);
     }
@@ -97,11 +103,9 @@ class PupukResource extends Resource
                     ->width(80)->height(60)
                     ->defaultImageUrl(url('/images/placeholder.png')),
 
-                // DIUBAH: Nama field dan relasi
                 Tables\Columns\TextColumn::make('nama_pupuk')
                     ->searchable()->sortable(),
 
-                // DIUBAH: Relasi ke kategoriPupuk
                 Tables\Columns\TextColumn::make('kategoriPupuk.nama_kategori')
                     ->label('Kategori')
                     ->searchable()->sortable(),
@@ -122,7 +126,6 @@ class PupukResource extends Resource
                     }),
             ])
             ->filters([
-                // DIUBAH: Relasi dan field untuk filter
                 Tables\Filters\SelectFilter::make('kategori_pupuk_id')
                     ->relationship('kategoriPupuk', 'nama_kategori')
                     ->label('Filter Kategori'),
@@ -136,7 +139,7 @@ class PupukResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make(), // Menggunakan Tables\Actions\DeleteAction
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -145,7 +148,6 @@ class PupukResource extends Resource
             ]);
     }
 
-    // DIUBAH: Eager loading menggunakan relasi 'kategoriPupuk'
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['kategoriPupuk']);
@@ -158,7 +160,6 @@ class PupukResource extends Resource
 
     public static function getPages(): array
     {
-        // DIUBAH: Arahkan ke class Page yang benar
         return [
             'index' => Pages\ListPupuk::route('/'),
             'create' => Pages\CreatePupuk::route('/create'),
