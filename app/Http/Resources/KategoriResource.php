@@ -16,8 +16,8 @@ class KategoriResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'nama' => $this->nama_kategori,
-            'slug' => $this->slug,
+            'nama_kategori' => $this->nama_kategori, // Asumsi nama kolom di tabel kategori_pupuk
+            'slug' => $this->slug, // Jika ada slug
             // 'deskripsi' => $this->deskripsi, // Opsional
         ];
     }

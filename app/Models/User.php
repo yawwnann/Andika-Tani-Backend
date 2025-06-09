@@ -1,26 +1,31 @@
 <?php
 // File: app/Models/User.php
+
 namespace App\Models;
 
 // use statements yang sudah ada
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+// HAPUS INI: use Laravel\Sanctum\HasApiTokens; // <--- HAPUS BARIS INI
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-// use statement tambahan
+// use statement tambahan yang diperlukan untuk JWT
+use Tymon\JWTAuth\Contracts\JWTSubject; // <--- TAMBAHKAN INI
+
+// use statement lainnya
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log; // <-- TAMBAHAN untuk Log::error / Log::warning
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary; // <-- TAMBAHAN untuk Cloudinary::secureUrl
+use Illuminate\Support\Facades\Log;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 /**
  * @mixin IdeHelperUser
  */
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject // <--- IMPLEMENTASIKAN INTERFACE INI
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    // HAPUS INI: use HasApiTokens, HasFactory, Notifiable; // <--- HAPUS 'HasApiTokens'
+    use HasFactory, Notifiable; // <--- CUKUP INI SAJA
 
     protected $fillable = [
         'name',
@@ -55,18 +60,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(Pesanan::class, 'user_id');
     }
-    // --- Akhir Relasi ---
+
     public function keranjangItems(): HasMany
     {
         return $this->hasMany(KeranjangItem::class);
     }
+    // --- Akhir Relasi ---
 
     // --- Accessor URL Foto Profil ---
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo_public_id) {
             try {
-                // --- PERUBAHAN DI SINI: Gunakan Facade Cloudinary ---
                 return Cloudinary::secureUrl($this->profile_photo_public_id, [
                     'transformation' => [
                         ['width' => 200, 'height' => 200, 'crop' => 'fill', 'gravity' => 'face'],
@@ -75,16 +80,13 @@ class User extends Authenticatable
                     ]
                 ]);
             } catch (\Exception $e) {
-                // Gunakan Log Facade yang sudah di-import
                 Log::error("Cloudinary URL generation failed for user {$this->id}: " . $e->getMessage());
                 return 'https://via.placeholder.com/200?text=Error';
             }
         }
-        // Fallback ke ui-avatars
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=FFFFFF&background=0D8ABC&size=200&bold=true';
     }
     // --- Akhir Accessor URL Foto Profil ---
-
 
     // --- Accessor Inisial Nama ---
     public function getInitialsAttribute(): string
@@ -103,7 +105,6 @@ class User extends Authenticatable
     }
     // --- Akhir Accessor Inisial Nama ---
 
-
     // --- Method hasRole ---
     public function hasRole(string $roleSlug): bool
     {
@@ -111,4 +112,25 @@ class User extends Authenticatable
     }
     // --- Akhir Method hasRole ---
 
+    // --- Metode yang diperlukan oleh JWTSubject ---
+    /**
+     * Get the identifier that will be stored in the subject claim of the JWT.
+     *
+     * @return mixed
+     */
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    /**
+     * Return a key value array, containing any custom claims to be added to the JWT.
+     *
+     * @return array
+     */
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+    // --- Akhir Metode JWTSubject ---
 }

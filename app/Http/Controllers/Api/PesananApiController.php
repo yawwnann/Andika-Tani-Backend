@@ -5,17 +5,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StorePesananApiRequest; // Request untuk validasi saat membuat pesanan
-// Jika Anda punya request khusus untuk update, bisa dibuat juga:
-// use App\Http\Requests\UpdatePesananApiRequest;
-use App\Http\Resources\PesananResource;
+use App\Http\Requests\StorePesananApiRequest; // <--- DIUBAH: namespace Request (tidak ada 'Api' di folder Requests Anda)
+use App\Http\Resources\PesananResource; // <--- DIUBAH: namespace Resource
 use App\Models\Pesanan;
 use App\Services\PesananService; // Asumsi Anda menggunakan service ini
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use Illuminate\Support\Facades\Auth; // Untuk mendapatkan user yang terautentikasi
+use Illuminate\Support\Facades\Auth;
 
 class PesananApiController extends Controller
 {
@@ -26,21 +24,21 @@ class PesananApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $user = $request->user(); // Mendapatkan pengguna yang terautentikasi via Sanctum
+            $user = $request->user();
 
             if (!$user) {
                 return response()->json(['message' => 'Unauthorized'], 401);
             }
 
             $pesanans = Pesanan::where('user_id', $user->id)
-                ->with(['user', 'items']) // <-- PERBAIKAN DI SINI: dari 'items.ikan' menjadi 'items'
+                ->with(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk'])
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->query('per_page', 10));
 
             return PesananResource::collection($pesanans)->response();
 
         } catch (Exception $e) {
-            Log::error('API Pesanan Index Error: ' . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]); // Tambahkan trace untuk debug
+            Log::error('API Pesanan Index Error: ' . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
             return response()->json([
                 'message' => 'Gagal memuat riwayat pesanan.',
                 'error' => 'Terjadi kesalahan pada server.'
@@ -58,7 +56,7 @@ class PesananApiController extends Controller
         try {
             $user = $request->user();
             $pesanan = $pesananService->createOrder($validatedData, $user);
-            $pesanan->load(['user', 'items']); // <-- PERBAIKAN DI SINI: dari 'items.ikan' menjadi 'items'
+            $pesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
 
             return (new PesananResource($pesanan))
                 ->response()
@@ -84,7 +82,7 @@ class PesananApiController extends Controller
         }
 
         try {
-            $pesanan->load(['user', 'items']); // <-- PERBAIKAN DI SINI: dari 'items.ikan' menjadi 'items'
+            $pesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
             return (new PesananResource($pesanan))->response();
         } catch (Exception $e) {
             Log::error("API Pesanan Show Error untuk pesanan #{$pesanan->id}: " . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
@@ -116,7 +114,7 @@ class PesananApiController extends Controller
 
         try {
             $updatedPesanan = $pesananService->updateOrder($pesanan, $validatedData);
-            $updatedPesanan->load(['user', 'items']); // <-- PERBAIKAN DI SINI: dari 'items.ikan' menjadi 'items'
+            $updatedPesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
 
             return (new PesananResource($updatedPesanan))->response();
 
@@ -156,14 +154,17 @@ class PesananApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Mengubah status pesanan menjadi 'selesai' dari sisi pelanggan.
+     * POST /api/pesanan/{pesanan}/tandai-selesai
+     */
     public function tandaiSelesai(Request $request, Pesanan $pesanan): JsonResponse
     {
-        // Otorisasi: Pastikan pesanan ini milik pengguna yang sedang login
         if ($request->user()->id !== $pesanan->user_id) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
 
-        // Validasi: Hanya bisa ditandai selesai jika statusnya 'dikirim'
         if ($pesanan->status !== 'dikirim') {
             return response()->json(['message' => 'Pesanan ini tidak bisa ditandai selesai dari status saat ini.'], 422);
         }
@@ -172,8 +173,7 @@ class PesananApiController extends Controller
             $pesanan->status = 'selesai';
             $pesanan->save();
 
-            // Muat ulang relasi jika diperlukan oleh resource
-            $pesanan->load(['user', 'items']);
+            $pesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
 
             return (new PesananResource($pesanan))->response()->setStatusCode(200);
 

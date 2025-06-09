@@ -9,11 +9,13 @@ class StorePesananApiRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     * Atur ke true jika API ini publik atau otentikasi ditangani di middleware route
      */
     public function authorize(): bool
     {
-        return true; // Ubah jika perlu otorisasi spesifik
+        // Sesuaikan dengan kebutuhan otorisasi Anda.
+        // Jika API ini memerlukan otentikasi (misal via Sanctum) dan user yang login boleh membuat pesanan,
+        // maka 'true' adalah benar jika otorisasi ditangani di middleware route.
+        return true;
     }
 
     /**
@@ -29,24 +31,26 @@ class StorePesananApiRequest extends FormRequest
             'alamat_pengiriman' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'], // Wajib ada item, minimal 1
-            'items.*.ikan_id' => ['required', 'integer', 'exists:ikan,id'], // Setiap item harus punya ikan_id yg valid di tabel ikan
+            // Diubah: 'ikan_id' menjadi 'pupuk_id' dan tabel 'ikan' menjadi 'pupuk'
+            'items.*.pupuk_id' => ['required', 'integer', 'exists:pupuk,id'], // Setiap item harus punya pupuk_id yg valid di tabel pupuk
             'items.*.jumlah' => ['required', 'integer', 'min:1'], // Setiap item harus punya jumlah minimal 1
+            // Jika Anda juga mengirim 'harga_saat_pesanan' dari frontend dan ingin memvalidasinya:
+            // 'items.*.harga_saat_pesanan' => ['required', 'numeric', 'min:0'],
         ];
     }
 
     /**
      * Custom message for validation errors.
-     * Opsional: Pesan error kustom dalam Bahasa Indonesia
      * @return array
      */
     public function messages(): array
     {
         return [
             'nama_pelanggan.required' => 'Nama pelanggan wajib diisi.',
-            'items.required' => 'Minimal ada satu item ikan yang dipesan.',
-            'items.min' => 'Minimal ada satu item ikan yang dipesan.',
-            'items.*.ikan_id.required' => 'ID Ikan wajib dipilih untuk setiap item.',
-            'items.*.ikan_id.exists' => 'ID Ikan yang dipilih tidak valid.',
+            'items.required' => 'Minimal ada satu item pupuk yang dipesan.', // Pesan disesuaikan
+            'items.min' => 'Minimal ada satu item pupuk yang dipesan.',      // Pesan disesuaikan
+            'items.*.pupuk_id.required' => 'ID Pupuk wajib dipilih untuk setiap item.', // Pesan disesuaikan
+            'items.*.pupuk_id.exists' => 'ID Pupuk yang dipilih tidak valid.',        // Pesan disesuaikan
             'items.*.jumlah.required' => 'Jumlah wajib diisi untuk setiap item.',
             'items.*.jumlah.min' => 'Jumlah minimal adalah 1 untuk setiap item.',
         ];

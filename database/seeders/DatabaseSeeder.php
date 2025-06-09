@@ -21,8 +21,15 @@ class DatabaseSeeder extends Seeder
         // 1. BUAT ROLES
         // ===========================================
         $this->command->info('Membuat Roles...');
-        $adminRole = Role::firstOrCreate(['name' => 'Admin', 'slug' => 'admin']);
-        $customerRole = Role::firstOrCreate(['name' => 'Pelanggan', 'slug' => 'pelanggan']);
+        $adminRole = Role::firstOrCreate(
+            ['slug' => 'admin'],
+            ['name' => 'Admin']
+        );
+        // DIUBAH: Membuat role 'User' dengan slug 'user'
+        $userRole = Role::firstOrCreate(
+            ['slug' => 'user'],
+            ['name' => 'User']
+        );
         $this->command->info('Roles dibuat.');
 
         // 2. BUAT USER
@@ -36,14 +43,17 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
             ]
         );
-        $adminUser->roles()->sync($adminRole);
+        $adminUser->roles()->sync($adminRole->id); // Attach role Admin ke user Admin
+        $this->command->info('User Admin dibuat dan role di-assign.');
 
-        // User Pelanggan
+        // User Pelanggan (sekarang dengan role 'user')
+        $this->command->info('Membuat Pelanggan dan meng-assign role "User"...');
         $pelangganUsers = User::factory(10)->create();
         foreach ($pelangganUsers as $pelanggan) {
-            $pelanggan->roles()->sync($customerRole);
+            $pelanggan->roles()->sync($userRole->id); // Attach role User ke user Pelanggan
         }
-        $this->command->info('Users dibuat.');
+        $this->command->info('Pelanggan dibuat dan role "User" di-assign.');
+
 
         // 3. BUAT DATA PRODUK
         // ===========================================
@@ -56,8 +66,8 @@ class DatabaseSeeder extends Seeder
         // 4. BUAT DATA PESANAN (LOGIKA PALING KOMPLEKS)
         // ===========================================
         $this->command->info('Membuat Pesanan dan item-itemnya...');
+        // Pastikan pesanan dibuat oleh user dengan role pelanggan (user)
         Pesanan::factory(25)->create([
-            // Pastikan pesanan dibuat oleh user dengan role pelanggan
             'user_id' => $pelangganUsers->random()->id,
         ])->each(function (Pesanan $pesanan) use ($pupukList) {
             // Untuk setiap pesanan, tambahkan 1 sampai 3 jenis pupuk secara acak
