@@ -57,6 +57,9 @@ class PesananApiController extends Controller
             $user = Auth::user();
             $pesanan = $pesananService->createOrder($validatedData, $user);
 
+            // Clear the cart after successful order creation
+            $user->keranjangItems()->delete();
+
             // PERBAIKAN: Eager loading yang benar setelah pesanan dibuat
             $pesanan->load(['user', 'items.kategoriPupuk']); // <--- KOREKSI PENTING
 

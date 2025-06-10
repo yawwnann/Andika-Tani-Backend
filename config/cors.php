@@ -24,7 +24,7 @@ return [
     | **INI YANG PALING PENTING.** '*' mengizinkan semua (TIDAK AMAN!).
     | Gunakan URL frontend spesifik, ambil dari .env.
     */
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173')], // Fallback ke port React umum
+    'allowed_origins' => ['http://localhost:5173'], // Fallback ke port React umum
 
     /*
     |--------------------------------------------------------------------------
@@ -38,7 +38,7 @@ return [
     | Allowed Headers
     |--------------------------------------------------------------------------
     */
-    'allowed_headers' => ['*'], // Izinkan semua header standar & custom
+    'allowed_headers' => ['*'],
 
     /*
     |--------------------------------------------------------------------------
@@ -61,6 +61,6 @@ return [
     | Set true jika frontend perlu kirim/terima cookies/session/token Auth.
     | Jika true, allowed_origins TIDAK BOLEH '*'.
     */
-    'supports_credentials' => false, // Set true jika pakai Sanctum SPA, dll.
+    'supports_credentials' => true, // Set true jika pakai Sanctum SPA, dll.
 
 ];

@@ -73,6 +73,7 @@ Route::middleware('auth:api')->group(function () {
     // --- Manajemen Keranjang Belanja ---
     // Route resource API untuk keranjang belanja (index, store, update, destroy)
     Route::apiResource('keranjang', KeranjangController::class)->except(['show']); // Asumsi tidak perlu show untuk item keranjang tunggal
+    Route::delete('/keranjang/clear', [KeranjangController::class, 'clear'])->name('keranjang.clear');
     // Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang.index'); // DIHAPUS, sudah ada di apiResource
     // Route::post('/keranjang', [KeranjangController::class, 'store'])->name('keranjang.store'); // DIHAPUS, sudah ada di apiResource
     // Route::put('/keranjang/{keranjangItem}', [KeranjangController::class, 'update'])->name('keranjang.update'); // DIHAPUS, sudah ada di apiResource
@@ -87,11 +88,3 @@ Route::fallback(function () {
     return response()->json(['message' => 'Endpoint tidak ditemukan.'], 404);
 });
 
-Route::post('/test-register', function (Request $request) {
-    \Log::info('Test register called', $request->all());
-
-    return response()->json([
-        'message' => 'Test register endpoint working',
-        'data' => $request->all()
-    ]);
-});

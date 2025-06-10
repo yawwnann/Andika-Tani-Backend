@@ -36,6 +36,13 @@ class RouteServiceProvider extends ServiceProvider
     {
         $this->configureRateLimiting();
 
+        // Custom binding untuk keranjang
+        \Illuminate\Support\Facades\Route::bind('keranjang', function ($value) {
+            return \App\Models\KeranjangItem::where('id', $value)
+                ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                ->firstOrFail();
+        });
+
         $this->routes(function () {
             Route::prefix('api')
                 ->middleware('api')

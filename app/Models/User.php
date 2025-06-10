@@ -13,6 +13,11 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\KeranjangItem[] $keranjangItems
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Pesanan[] $pesanan
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Role[] $roles
+ */
 
 class User extends Authenticatable implements JWTSubject
 {
