@@ -2,11 +2,9 @@
 
 namespace App\Http\Resources;
 
-use App\Http\Resources\Api\PupukResource as ApiPupukResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\PupukResource; // <--- TAMBAHKAN BARIS INI
-// use App\Http\Resources\IkanResource; // <-- Hapus atau komen ini, karena sudah tidak digunakan
+use App\Http\Resources\PupukResource; // Pastikan ini diimpor
 
 class KeranjangItemResource extends JsonResource
 {
@@ -15,7 +13,8 @@ class KeranjangItemResource extends JsonResource
         return [
             'id' => $this->id,
             'quantity' => $this->quantity,
-            // Pastikan relasi 'pupuk' di-load di controller sebelum resource ini digunakan
+            // 'pupuk' adalah relasi dari KeranjangItem ke Pupuk
+            // Kita ingin resource PupukResource memformat data pupuk
             'pupuk' => new PupukResource($this->whenLoaded('pupuk')),
 
             'created_at' => $this->created_at?->toISOString(),

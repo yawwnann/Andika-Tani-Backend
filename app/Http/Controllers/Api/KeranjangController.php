@@ -3,21 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-// Hapus DB jika tidak dipakai lagi di method lain
-// use Illuminate\Support\Facades\DB;
-use App\Models\KeranjangItem; // Import Model KeranjangItem
-use App\Models\Ikan;
+use App\Models\KeranjangItem;
+use App\Models\Pupuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Resources\KeranjangItemResource; // Import Resource
+use App\Http\Resources\KeranjangItemResource;
 use Illuminate\Validation\Rule;
-use Illuminate\Database\Eloquent\Builder; // Import Builder jika dipakai di tempat lain
+use Illuminate\Database\Eloquent\Builder;
 
 class KeranjangController extends Controller
 {
     /**
      * Display a listing of the resource (tampilkan isi keranjang user).
-     * (Versi menggunakan Eloquent & Resource)
+     * GET /api/keranjang
      */
     public function index()
     {
@@ -26,22 +24,18 @@ class KeranjangController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        // Menggunakan Eloquent Relationship dan Eager Loading
-        // Memastikan relasi 'ikan' dan 'kategori' di dalam 'ikan' juga di-load
-        $keranjangItems = $user->keranjangItems()->with([
-            'ikan' => function ($query) {
-                $query->with('kategori'); // Asumsi relasi 'kategori' ada di Model Ikan
-            }
-        ])->get();
+        // PERBAIKAN: Eager loading yang benar:
+        // 'pupuk.kategoriPupuk' akan memuat item keranjang, lalu pupuk yang terhubung
+        // dengan item tersebut, dan kemudian kategori pupuk yang terhubung dengan pupuk.
+        $keranjangItems = $user->keranjangItems()->with('pupuk.kategoriPupuk')->get(); // <--- KOREKSI PENTING
 
-        // Mengembalikan data menggunakan API Resource Collection
-        // Ini akan otomatis membuat struktur dengan key 'data' dan format sesuai Resource
         return KeranjangItemResource::collection($keranjangItems);
     }
 
-    // Method store, update, destroy sebaiknya juga diubah menggunakan Eloquent
-    // agar lebih konsisten dan memanfaatkan fitur Model (misal $fillable, events)
-    // Contoh store dengan Eloquent (menggantikan versi DB::table):
+    /**
+     * Store a newly created resource in storage (tambahkan item ke keranjang).
+     * POST /api/keranjang
+     */
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -50,47 +44,45 @@ class KeranjangController extends Controller
         }
 
         $validated = $request->validate([
-            'ikan_id' => ['required', Rule::exists('ikan', 'id')->where(fn($query) => $query->where('stok', '>', 0))],
+            'pupuk_id' => ['required', Rule::exists('pupuk', 'id')->where(fn($query) => $query->where('stok', '>', 0))],
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $ikanId = $validated['ikan_id'];
+        $pupukId = $validated['pupuk_id'];
         $quantity = $validated['quantity'];
-        $ikan = Ikan::find($ikanId);
+        $pupuk = Pupuk::find($pupukId);
 
-        if (!$ikan || $ikan->stok < $quantity) {
-            return response()->json(['message' => 'Stok ikan tidak mencukupi atau ikan tidak ditemukan.'], 422);
+        if (!$pupuk || $pupuk->stok < $quantity) {
+            return response()->json(['message' => 'Stok pupuk tidak mencukupi atau pupuk tidak ditemukan.'], 422);
         }
 
-        // Gunakan Eloquent untuk mencari atau membuat item baru
         $keranjangItem = $user->keranjangItems()
-            ->where('ikan_id', $ikanId)
+            ->where('pupuk_id', $pupukId)
             ->first();
 
         if ($keranjangItem) {
-            // Item sudah ada, tambah quantity
             $newQuantity = $keranjangItem->quantity + $quantity;
-            // Validasi stok lagi untuk total quantity
-            if ($newQuantity > $ikan->stok) {
-                return response()->json(['message' => 'Stok ikan tidak cukup untuk jumlah ini.', 'stok_tersisa' => $ikan->stok], 422);
+            if ($newQuantity > $pupuk->stok) {
+                return response()->json(['message' => 'Stok pupuk tidak cukup untuk jumlah ini.', 'stok_tersisa' => $pupuk->stok], 422);
             }
             $keranjangItem->quantity = $newQuantity;
             $keranjangItem->save();
         } else {
-            // Buat item baru
             $keranjangItem = $user->keranjangItems()->create([
-                'ikan_id' => $ikanId,
+                'pupuk_id' => $pupukId,
                 'quantity' => $quantity,
             ]);
         }
 
-        // Load relasi dan kembalikan dengan Resource
-        return new KeranjangItemResource($keranjangItem->load('ikan.kategori'));
+        // PERBAIKAN: Eager loading yang benar setelah item disimpan/diupdate
+        return new KeranjangItemResource($keranjangItem->load('pupuk.kategoriPupuk')); // <--- KOREKSI PENTING
     }
 
-
-    // Contoh update dengan Eloquent (menggantikan versi DB::table)
-    public function update(Request $request, KeranjangItem $keranjangItem) // Gunakan Route Model Binding
+    /**
+     * Update the specified resource in storage.
+     * PUT/PATCH /api/keranjang/{keranjangItem}
+     */
+    public function update(Request $request, KeranjangItem $keranjangItem)
     {
         $user = Auth::user();
         if (!$user || $keranjangItem->user_id !== $user->id) {
@@ -98,20 +90,23 @@ class KeranjangController extends Controller
         }
 
         $validated = $request->validate(['quantity' => 'required|integer|min:1']);
-        $ikan = $keranjangItem->ikan; // Ambil ikan dari relasi
+        $pupuk = $keranjangItem->pupuk;
 
-        if (!$ikan || $ikan->stok < $validated['quantity']) {
-            return response()->json(['message' => 'Stok ikan tidak mencukupi.'], 422);
+        if (!$pupuk || $pupuk->stok < $validated['quantity']) {
+            return response()->json(['message' => 'Stok pupuk tidak mencukupi.'], 422);
         }
 
-        $keranjangItem->update(['quantity' => $validated['quantity']]); // Gunakan update()
+        $keranjangItem->update(['quantity' => $validated['quantity']]);
 
-        return new KeranjangItemResource($keranjangItem->load('ikan.kategori'));
+        // PERBAIKAN: Eager loading yang benar setelah item diupdate
+        return new KeranjangItemResource($keranjangItem->load('pupuk.kategoriPupuk')); // <--- KOREKSI PENTING
     }
 
-
-    // Contoh destroy dengan Eloquent (menggantikan versi DB::table)
-    public function destroy(KeranjangItem $keranjangItem) // Gunakan Route Model Binding
+    /**
+     * Remove the specified resource from storage.
+     * DELETE /api/keranjang/{keranjangItem}
+     */
+    public function destroy(KeranjangItem $keranjangItem)
     {
         $user = Auth::user();
         if (!$user || $keranjangItem->user_id !== $user->id) {
@@ -119,7 +114,6 @@ class KeranjangController extends Controller
         }
 
         $keranjangItem->delete();
-        return response()->json(['message' => 'Item berhasil dihapus'], 200);
+        return response()->json(['message' => 'Item berhasil dihapus dari keranjang.'], 200);
     }
-
 }

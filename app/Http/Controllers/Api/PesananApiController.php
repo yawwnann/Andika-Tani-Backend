@@ -1,19 +1,18 @@
 <?php
 
-// File: app/Http/Controllers/Api/PesananApiController.php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StorePesananApiRequest; // <--- DIUBAH: namespace Request (tidak ada 'Api' di folder Requests Anda)
-use App\Http\Resources\PesananResource; // <--- DIUBAH: namespace Resource
+use App\Http\Requests\StorePesananApiRequest;
+use App\Http\Resources\PesananResource;
 use App\Models\Pesanan;
-use App\Services\PesananService; // Asumsi Anda menggunakan service ini
+use App\Models\User; // Pastikan ini diimpor jika digunakan
+use App\Services\PesananService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use Illuminate\Support\Facades\Auth;
 
 class PesananApiController extends Controller
 {
@@ -24,19 +23,20 @@ class PesananApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
-
+            $user = Auth::user();
             if (!$user) {
                 return response()->json(['message' => 'Unauthorized'], 401);
             }
 
+            // PERBAIKAN: Eager loading yang benar:
+            // 'items.pupuk.kategoriPupuk' akan memuat item pesanan, lalu pupuk yang terhubung
+            // dengan item tersebut, dan kemudian kategori pupuk yang terhubung dengan pupuk.
             $pesanans = Pesanan::where('user_id', $user->id)
-                ->with(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk'])
+                ->with(['user', 'items.kategoriPupuk']) // <--- KOREKSI PENTING
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->query('per_page', 10));
 
             return PesananResource::collection($pesanans)->response();
-
         } catch (Exception $e) {
             Log::error('API Pesanan Index Error: ' . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
             return response()->json([
@@ -54,14 +54,15 @@ class PesananApiController extends Controller
     {
         $validatedData = $request->validated();
         try {
-            $user = $request->user();
+            $user = Auth::user();
             $pesanan = $pesananService->createOrder($validatedData, $user);
-            $pesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
+
+            // PERBAIKAN: Eager loading yang benar setelah pesanan dibuat
+            $pesanan->load(['user', 'items.kategoriPupuk']); // <--- KOREKSI PENTING
 
             return (new PesananResource($pesanan))
                 ->response()
                 ->setStatusCode(201);
-
         } catch (Exception $e) {
             Log::error('API Pesanan Store Error: ' . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
             return response()->json([
@@ -80,9 +81,9 @@ class PesananApiController extends Controller
         if ($request->user()->id !== $pesanan->user_id) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
-
         try {
-            $pesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
+            // PERBAIKAN: Eager loading yang benar
+            $pesanan->load(['user', 'items.kategoriPupuk']); // <--- KOREKSI PENTING
             return (new PesananResource($pesanan))->response();
         } catch (Exception $e) {
             Log::error("API Pesanan Show Error untuk pesanan #{$pesanan->id}: " . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
@@ -114,10 +115,10 @@ class PesananApiController extends Controller
 
         try {
             $updatedPesanan = $pesananService->updateOrder($pesanan, $validatedData);
-            $updatedPesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
+            // PERBAIKAN: Eager loading yang benar setelah update
+            $updatedPesanan->load(['user', 'items.kategoriPupuk']); // <--- KOREKSI PENTING
 
             return (new PesananResource($updatedPesanan))->response();
-
         } catch (Exception $e) {
             Log::error("API Pesanan Update Error untuk pesanan #{$pesanan->id}: " . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
             return response()->json([
@@ -136,16 +137,13 @@ class PesananApiController extends Controller
         if ($request->user()->id !== $pesanan->user_id) {
             return response()->json(['message' => 'Akses ditolak untuk menghapus pesanan ini.'], 403);
         }
-
         try {
             $isDeleted = $pesanan->delete();
-
             if ($isDeleted) {
                 return response()->json(['message' => 'Pesanan berhasil dihapus.'], 200);
             } else {
                 throw new Exception("Gagal menghapus pesanan dari database.");
             }
-
         } catch (Exception $e) {
             Log::error("API Pesanan Destroy Error untuk pesanan #{$pesanan->id}: " . $e->getMessage(), ['exception_class' => get_class($e), 'trace' => $e->getTraceAsString()]);
             return response()->json([
@@ -164,19 +162,15 @@ class PesananApiController extends Controller
         if ($request->user()->id !== $pesanan->user_id) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
-
         if ($pesanan->status !== 'dikirim') {
             return response()->json(['message' => 'Pesanan ini tidak bisa ditandai selesai dari status saat ini.'], 422);
         }
-
         try {
             $pesanan->status = 'selesai';
             $pesanan->save();
-
-            $pesanan->load(['user', 'items.pupuk', 'items.pupuk.kategoriPupuk']);
-
+            // PERBAIKAN: Eager loading yang benar setelah status diubah
+            $pesanan->load(['user', 'items.kategoriPupuk']); // <--- KOREKSI PENTING
             return (new PesananResource($pesanan))->response()->setStatusCode(200);
-
         } catch (\Exception $e) {
             Log::error("Gagal menandai pesanan #{$pesanan->id} selesai: " . $e->getMessage());
             return response()->json(['message' => 'Gagal memperbarui status pesanan.', 'error' => 'Terjadi kesalahan server.'], 500);

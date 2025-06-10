@@ -15,6 +15,7 @@ namespace App\Models{
 /**
  * 
  *
+ * @mixin IdeHelperKategoriPupuk
  * @property int $id
  * @property string $nama_kategori
  * @property string $slug
@@ -33,10 +34,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|KategoriPupuk whereNamaKategori($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|KategoriPupuk whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|KategoriPupuk whereUpdatedAt($value)
- * @mixin \Eloquent
  */
-	#[\AllowDynamicProperties]
-	class IdeHelperKategoriPupuk {}
+	class KategoriPupuk extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -60,23 +59,22 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|KeranjangItem whereQuantity($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|KeranjangItem whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|KeranjangItem whereUserId($value)
- * @mixin \Eloquent
  */
-	#[\AllowDynamicProperties]
-	class IdeHelperKeranjangItem {}
+	class KeranjangItem extends \Eloquent {}
 }
 
 namespace App\Models{
 /**
  * 
  *
+ * @mixin IdeHelperPesanan
  * @property int $id
- * @property int $user_id
+ * @property int|null $user_id
  * @property string $nama_pelanggan
  * @property string $nomor_whatsapp
  * @property string $alamat_pengiriman
  * @property numeric $total_harga
- * @property string $metode_pembayaran
+ * @property string|null $metode_pembayaran
  * @property string $status_pembayaran
  * @property \Illuminate\Support\Carbon $tanggal_pesanan
  * @property string $status
@@ -91,7 +89,7 @@ namespace App\Models{
  * @property-read string|null $payment_proof_thumbnail
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Pupuk> $items
  * @property-read int|null $items_count
- * @property-read \App\Models\User $user
+ * @property-read \App\Models\User|null $user
  * @method static \Database\Factories\PesananFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pesanan newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pesanan newQuery()
@@ -112,31 +110,32 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pesanan whereTotalHarga($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pesanan whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pesanan whereUserId($value)
- * @mixin \Eloquent
  */
-	#[\AllowDynamicProperties]
-	class IdeHelperPesanan {}
+	class Pesanan extends \Eloquent {}
 }
 
 namespace App\Models{
 /**
- * App\Models\Pupuk
+ * 
  *
+ * @mixin IdeHelperPupuk
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\KeranjangItem[] $keranjangItems
  * @property int $id
  * @property int $kategori_pupuk_id
  * @property string $nama_pupuk
  * @property string $slug
  * @property string|null $deskripsi
- * @property float $harga
+ * @property numeric $harga
  * @property int $stok
  * @property string $status_ketersediaan
  * @property string|null $gambar_utama
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read string|null $gambar_utama_url
  * @property-read \App\Models\KategoriPupuk $kategoriPupuk
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Pesanan[] $pesanan
+ * @property-read int|null $keranjang_items_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Pesanan> $pesanan
  * @property-read int|null $pesanan_count
- * @mixin \Illuminate\Database\Eloquent\Builder
  * @method static \Database\Factories\PupukFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pupuk newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pupuk newQuery()
@@ -152,16 +151,15 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pupuk whereStatusKetersediaan($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pupuk whereStok($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Pupuk whereUpdatedAt($value)
- * @mixin \Eloquent
  */
-	#[\AllowDynamicProperties]
-	class IdeHelperPupuk {}
+	class Pupuk extends \Eloquent {}
 }
 
 namespace App\Models{
 /**
  * 
  *
+ * @mixin IdeHelperRole
  * @property int $id
  * @property string $name
  * @property string $slug
@@ -177,10 +175,8 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Role whereUpdatedAt($value)
- * @mixin \Eloquent
  */
-	#[\AllowDynamicProperties]
-	class IdeHelperRole {}
+	class Role extends \Eloquent {}
 }
 
 namespace App\Models{
@@ -206,8 +202,6 @@ namespace App\Models{
  * @property-read int|null $pesanan_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Role> $roles
  * @property-read int|null $roles_count
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
- * @property-read int|null $tokens_count
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
@@ -221,9 +215,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereProfilePhotoPublicId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
- * @mixin \Eloquent
  */
-	#[\AllowDynamicProperties]
-	class IdeHelperUser {}
+	class User extends \Eloquent implements \Tymon\JWTAuth\Contracts\JWTSubject {}
 }
 

@@ -1,50 +1,34 @@
 <?php
 
+
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * @mixin IdeHelperKeranjangItem
- */
 class KeranjangItem extends Model
 {
     use HasFactory;
 
-    /**
-     * Nama tabel yang terhubung dengan model ini.
-     *
-     * @var string
-     */
-    protected $table = 'keranjang_items';
+    protected $table = 'keranjang_items'; // Pastikan nama tabel benar
 
-    /**
-     * Atribut yang dapat diisi secara massal.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
-        'pupuk_id', // DIUBAH dari ikan_id
+        'pupuk_id', // <--- PASTIKAN INI ADA
         'quantity',
     ];
 
-    /**
-     * Relasi: Satu item keranjang dimiliki oleh satu User.
-     */
+    // Relasi ke User
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relasi: Satu item keranjang merujuk ke satu produk Pupuk.
-     */
-    public function pupuk(): BelongsTo // DIUBAH dari ikan()
+    // Relasi ke Pupuk (sebelumnya Ikan)
+    public function pupuk(): BelongsTo // <--- PASTIKAN INI ADA DAN MENUNJUK KE PUPUK
     {
-        // DIUBAH dari Ikan::class ke Pupuk::class
-        return $this->belongsTo(Pupuk::class, 'pupuk_id');
+        return $this->belongsTo(Pupuk::class); // Menunjuk ke model Pupuk
     }
 }
